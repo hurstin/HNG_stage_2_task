@@ -6,7 +6,10 @@ export const getCountries = async (req, res) => {
       'https://restcountries.com/v2/all?fields=name,capital,region,population,flag,currencies'
     );
     const countries = response.data;
-    const currCode = countries.map((country) => country?.currencies);
+    const currCode = countries.map((country) => {
+      const curCode = country.currencies?.[0]?.code;
+      return curCode;
+    });
     res.json(currCode);
   } catch (error) {
     console.error(error);
@@ -20,9 +23,25 @@ export const dummyController = (req, res) => {
 
 export const getExchangeRate = async (req, res) => {
   try {
-    const response = await axios.get('https://open.er-api.com/v6/latest/USD');
-    const exchangeRate = response.data;
-    res.json(exchangeRate);
+    const exchangeRateResponse = await axios.get('https://open.er-api.com/v6/latest/USD');
+    const exchangeRates = exchangeRateResponse.data.rates;
+
+    const countriesResponse = await axios.get(
+      'https://restcountries.com/v2/all?fields=name,currencies,alpha2Code'
+    );
+    const countries = countriesResponse.data;
+
+    const currencyRates = {};
+    countries.forEach(country => {
+      if (country.currencies && country.currencies.length > 0) {
+        const currencyCode = country.currencies[0].code;
+        if (exchangeRates[currencyCode]) {
+          currencyRates[currencyCode] = exchangeRates[currencyCode];
+        }
+      }
+    });
+
+    res.json(currencyRates);
   } catch (error) {
     console.error(error);
     res.status(500).send('An error occurred while fetching exchange rate');
