@@ -6,16 +6,6 @@ const port = process.env.PORT || 3000;
 
 app.use('/', dummyRoute);
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
-
-app.listen(port, async () => {
-  try {
-    await prisma.$connect();
-    console.log('Database connected');
-  } catch (error) {
-    console.error('Database connection error:', error);
-  }
+app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
