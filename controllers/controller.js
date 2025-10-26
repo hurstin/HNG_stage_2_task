@@ -113,6 +113,34 @@ export const getCountryData = async (req, res) => {
   }
 };
 
+export const deleteCountryByName = async (req, res) => {
+  try {
+    console.log('Deleting country by name - START');
+    await sequelize.sync();
+    console.log('Database synced.');
+
+    const { name } = req.params;
+    console.log(
+      `Attempting to delete country with name: ${name} from database...`
+    );
+    const deletedRowCount = await Country.destroy({
+      where: { name: { [Op.like]: `%${name}%` } },
+    });
+
+    if (deletedRowCount === 0) {
+      console.log(`Country with name: ${name} not found for deletion.`);
+      return res.status(404).send('Country not found');
+    }
+
+    console.log(`Country ${name} deleted successfully.`);
+    console.log('Country deletion successful - END');
+    res.status(200).send('Country deleted successfully');
+  } catch (error) {
+    console.error('Error in deleteCountryByName:', error);
+    res.status(500).send('Server error');
+  }
+};
+
 export const dummyController = (req, res) => {
   res.send('Hello from the dummy controller!');
 };
