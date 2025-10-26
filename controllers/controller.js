@@ -1,41 +1,74 @@
 import axios from 'axios';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export const getCountries = async (req, res) => {
   try {
-    // Fetch country data from the REST Countries API
-    const response = await axios.get(
-      'https://restcountries.com/v2/all?fields=name,capital,region,population,flag,currencies'
-    );
-    const countries = response.data;
+    // Check if data exists in the database
+    const countries = await prisma.country.findMany();
 
-    // Fetch exchange rates from the Exchange Rate API
-    const exchangeRateResponse = await axios.get(
-      'https://open.er-api.com/v6/latest/USD'
-    );
-    const exchangeRates = exchangeRateResponse.data.rates;
+    if (countries.length > 0) {
+      // Data exists in the database, return it
+      console.log('Data retrieved from database');
+      res.json(countries);
+    } else {
+      // Data does not exist in the database, fetch from API, calculate GDP, and store in the database
+      console.log('Data fetched from API and stored in database');
+      const response = await axios.get(
+        'https://restcountries.com/v2/all?fields=name,capital,region,population,flag,currencies'
+      );
+      const countryData = response.data;
 
-    // Process each country to calculate estimated GDP
-    const countriesWithGDP = countries.map((country) => {
-      // Get the currency code of the country
-      const currencyCode = country.currencies?.[0]?.code;
-      // Get the exchange rate for the currency, default to 1 if not found
-      const exchangeRate = exchangeRates[currencyCode] || 1;
-      // Generate a random number between 1000 and 2000
-      const randomNumber = Math.floor(Math.random() * (2000 - 1000 + 1)) + 1000;
-      // Calculate the estimated GDP
-      const estimated_gdp = (country.population * randomNumber) / exchangeRate;
-      // Return the country object with the estimated GDP
-      return {
-        ...country,
-        estimated_gdp,
-      };
-    });
+      // Fetch exchange rates from the Exchange Rate API
+      const exchangeRateResponse = await axios.get(
+        'https://open.er-api.com/v6/latest/USD'
+      );
+      const exchangeRates = exchangeRateResponse.data.rates;
 
-    // Send the processed country data with estimated GDP as a JSON response
-    res.json(countriesWithGDP);
+      // Process each country to calculate estimated GDP and store in the database
+      const countriesWithGDP = await Promise.all(
+        countryData.map(async (country) => {
+          // Get the currency code of the country
+          const currencyCode = country.currencies?.[0]?.code;
+          // Get the exchange rate for the currency, default to 1 if not found
+          const exchangeRate = exchangeRates[currencyCode] || 1;
+          // Generate a random number between 1000 and 2000
+          const randomNumber =
+            Math.floor(Math.random() * (2000 - 1000 + 1)) + 1000;
+          // Calculate the estimated GDP
+          const estimated_gdp =
+            (country.population * randomNumber) / exchangeRate;
+
+          // Store the country data with estimated GDP in the database
+          await prisma.country.create({
+            data: {
+              name: country.name,
+              capital: country.capital,
+              region: country.region,
+              population: country.population,
+              flag: country.flag,
+              currencies: JSON.stringify(country.currencies),
+              estimated_gdp: estimated_gdp,
+            },
+          });
+
+          // Return the country object with the estimated GDP
+          return {
+            ...country,
+            estimated_gdp,
+          };
+        })
+      );
+
+      // Send the processed country data with estimated GDP as a JSON response
+      res.json(countriesWithGDP);
+    }
   } catch (error) {
     console.error(error);
     res.status(500).send('An error occurred while fetching country data');
+  } finally {
+    await prisma.$disconnect();
   }
 };
 

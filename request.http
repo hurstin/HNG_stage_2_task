@@ -1,5 +1,6 @@
 
+GET http://localhost:3000/countries
+
 GET http://localhost:3000/exchange-rate
 
-GET http://localhost:3000/countries
 
