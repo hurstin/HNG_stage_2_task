@@ -17,9 +17,9 @@
     "axios": "^1.12.2",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "jimp": "^0.22.12",
     "mysql2": "^3.15.3",
-    "sequelize": "^6.37.7",
-    "jimp": "^0.22.12"
+    "sequelize": "^6.37.7"
   },
   "devDependencies": {
     "prisma": "^6.18.0"

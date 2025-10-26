@@ -19,21 +19,32 @@ const fetchCountryData = async () => {
     const response = await axios.get(
       'https://restcountries.com/v2/all?fields=name,capital,region,population,flag,currencies'
     );
-
-    return response.data;
+    return { success: true, data: response.data };
   } catch (error) {
-    console.error('Error fetching country data:', error);
-    return [];
+    console.error(
+      'Error fetching country data from REST Countries API:',
+      error.message
+    );
+    return {
+      success: false,
+      details: 'Could not fetch data from REST Countries API',
+    };
   }
 };
 
 const fetchExchangeRates = async () => {
   try {
     const response = await axios.get('https://open.er-api.com/v6/latest/USD');
-    return response.data.rates;
+    return { success: true, rates: response.data.rates };
   } catch (error) {
-    console.error('Error fetching exchange rates:', error);
-    return {};
+    console.error(
+      'Error fetching exchange rates from Exchange Rate API:',
+      error.message
+    );
+    return {
+      success: false,
+      details: 'Could not fetch data from Exchange Rate API',
+    };
   }
 };
 
@@ -47,10 +58,23 @@ export const refreshCountryData = async (req, res) => {
     await sequelize.sync();
     console.log('Database synced.');
 
-    const countryData = await fetchCountryData();
-    const exchangeRates = await fetchExchangeRates();
+    const countryDataResult = await fetchCountryData();
+    if (!countryDataResult.success) {
+      return res.status(503).json({
+        error: 'External data source unavailable',
+        details: countryDataResult.details,
+      });
+    }
+    const countryData = countryDataResult.data;
 
-    console.log(countryData.length + ' countries fetched from external API.');
+    const exchangeRatesResult = await fetchExchangeRates();
+    if (!exchangeRatesResult.success) {
+      return res.status(503).json({
+        error: 'External data source unavailable',
+        details: exchangeRatesResult.details,
+      });
+    }
+    const exchangeRates = exchangeRatesResult.rates;
 
     // Insert or update data in the database
     for (const country of countryData) {
@@ -118,15 +142,12 @@ export const refreshCountryData = async (req, res) => {
     res.json(countries);
   } catch (error) {
     console.error('Error in refreshCountryData:', error);
-    res.status(500).send('Server error');
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 
 export const getCountryData = async (req, res) => {
   try {
-    await sequelize.sync();
-    console.log('Database synced.');
-
     const { region, currency, sort } = req.query;
     const whereClause = {};
     const orderClause = [];
@@ -150,15 +171,13 @@ export const getCountryData = async (req, res) => {
     res.json(countries);
   } catch (error) {
     console.error('Error in getCountryData:', error);
-    res.status(500).send('Server error');
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 
 export const deleteCountryByName = async (req, res) => {
   try {
     console.log('Deleting country by name - START');
-    await sequelize.sync();
-    console.log('Database synced.');
 
     const { name } = req.params;
     console.log(
@@ -170,23 +189,19 @@ export const deleteCountryByName = async (req, res) => {
 
     if (deletedRowCount === 0) {
       console.log(`Country with name: ${name} not found for deletion.`);
-      return res.status(404).send('Country not found');
+      return res.status(404).json({ error: 'Country not found' });
     }
 
-    console.log(`Country ${name} deleted successfully.`);
-    console.log('Country deletion successful - END');
-    res.status(200).send('Country deleted successfully');
+    res.status(200).json({ message: 'Country deleted successfully' });
   } catch (error) {
     console.error('Error in deleteCountryByName:', error);
-    res.status(500).send('Server error');
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 
 export const getStatus = async (req, res) => {
   try {
     console.log('Getting status - START');
-    await sequelize.sync();
-    console.log('Database synced.');
 
     const totalCountries = await Country.count();
     const lastRefreshRecord = await Country.findOne({
@@ -204,7 +219,7 @@ export const getStatus = async (req, res) => {
     });
   } catch (error) {
     console.error('Error in getStatus:', error);
-    res.status(500).send('Server error');
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 
@@ -217,7 +232,7 @@ export const getSummaryImage = async (req, res) => {
     }
   } catch (error) {
     console.error('Error serving summary image:', error);
-    res.status(500).send('Server error');
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 
@@ -237,8 +252,6 @@ export const dummyController = async (req, res) => {
 export const getCountryByName = async (req, res) => {
   try {
     console.log('Getting country by name - START');
-    await sequelize.sync();
-    console.log('Database synced.');
 
     const { name } = req.params;
     console.log(
@@ -250,7 +263,7 @@ export const getCountryByName = async (req, res) => {
 
     if (!country) {
       console.log(`Country with name: ${name} not found in database.`);
-      return res.status(404).send('Country not found');
+      return res.status(404).json({ error: 'Country not found' });
     }
 
     console.log(`Country ${country.name} fetched successfully.`);
@@ -260,6 +273,6 @@ export const getCountryByName = async (req, res) => {
     console.error('Error in getCountryByName:', error);
     // Log the full error stack for better debugging
     console.error(error.stack);
-    res.status(500).send('Server error');
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
