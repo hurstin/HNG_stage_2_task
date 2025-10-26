@@ -3,6 +3,16 @@ import Country from '../models/Country.js';
 import sequelize from '../db.js';
 import { Op } from 'sequelize';
 import { generateSummaryImage } from '../utils/imageGenerator.js';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const CACHE_DIR = path.join(__dirname, '..', 'cache');
+const IMAGE_PATH = path.join(CACHE_DIR, 'summary.png');
 
 const fetchCountryData = async () => {
   try {
@@ -194,6 +204,19 @@ export const getStatus = async (req, res) => {
     });
   } catch (error) {
     console.error('Error in getStatus:', error);
+    res.status(500).send('Server error');
+  }
+};
+
+export const getSummaryImage = async (req, res) => {
+  try {
+    if (fs.existsSync(IMAGE_PATH)) {
+      res.sendFile(IMAGE_PATH);
+    } else {
+      res.status(404).json({ error: 'Summary image not found' });
+    }
+  } catch (error) {
+    console.error('Error serving summary image:', error);
     res.status(500).send('Server error');
   }
 };

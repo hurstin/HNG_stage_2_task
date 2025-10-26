@@ -22,6 +22,9 @@ DELETE http://localhost:3000/countries/Nigeria
 ### Get API status
 GET http://localhost:3000/status
 
+###
+GET http://localhost:3000/countries/image
+
 
 
 
