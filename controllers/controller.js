@@ -36,15 +36,12 @@ export const refreshCountryData = async (req, res) => {
     await sequelize.sync();
     console.log('Database synced.');
 
-    // Clear existing data
-    console.log('Clearing existing data...');
-    await Country.destroy({ truncate: true });
-    console.log('Existing data cleared.');
-
     const countryData = await fetchCountryData();
     const exchangeRates = await fetchExchangeRates();
 
-    // Insert data into the database
+    console.log(countryData.length + ' countries fetched from external API.');
+
+    // Insert or update data in the database
     for (const country of countryData) {
       const currencyCode =
         country.currencies && country.currencies[0]
@@ -55,25 +52,40 @@ export const refreshCountryData = async (req, res) => {
       const estimatedGdp =
         country.population && exchangeRate
           ? (country.population * getRandomValue(1000, 2000)) / exchangeRate
-          : null;
+          : null; // Set to null if currency or exchange rate is not available
+
+      const countryPayload = {
+        name: country.name,
+        capital: country.capital,
+        region: country.region,
+        population: country.population,
+        currency_code: currencyCode,
+        exchange_rate: exchangeRate,
+        estimated_gdp: estimatedGdp,
+        flag_url: country.flag,
+        last_refreshed_at: new Date(), // Update refresh timestamp
+      };
 
       try {
-        await Country.create({
-          name: country.name,
-          capital: country.capital,
-          region: country.region,
-          population: country.population,
-          currency_code: currencyCode,
-          exchange_rate: exchangeRate,
-          estimated_gdp: estimatedGdp,
-          flag_url: country.flag,
+        const existingCountry = await Country.findOne({
+          where: { name: { [Op.like]: country.name } }, // Case-insensitive match for MySQL
         });
+
+        if (existingCountry) {
+          console.log(`Updating country: ${country.name}`);
+          await existingCountry.update(countryPayload);
+          console.log(`Country ${country.name} updated successfully - END`);
+        } else {
+          console.log(`Creating country: ${country.name}`);
+          await Country.create(countryPayload);
+          console.log(`Country ${country.name} created successfully - END`);
+        }
       } catch (error) {
-        console.error(`Error creating country ${country.name}:`, error);
+        console.error(`Error processing country ${country.name}:`, error);
       }
     }
 
-    const countries = await Country.findAll();
+    const countries = await Country.findAll(); // Fetch all countries after refresh
     res.json(countries);
   } catch (error) {
     console.error('Error in refreshCountryData:', error);
@@ -124,7 +136,7 @@ export const deleteCountryByName = async (req, res) => {
       `Attempting to delete country with name: ${name} from database...`
     );
     const deletedRowCount = await Country.destroy({
-      where: { name: { [Op.like]: `%${name}%` } },
+      where: { name: { [Op.like]: name } }, // Case-insensitive match for MySQL
     });
 
     if (deletedRowCount === 0) {
@@ -152,7 +164,9 @@ export const getStatus = async (req, res) => {
       order: [['last_refreshed_at', 'DESC']],
     });
 
-    const lastRefreshedAt = lastRefreshRecord ? lastRefreshRecord.last_refreshed_at : null;
+    const lastRefreshedAt = lastRefreshRecord
+      ? lastRefreshRecord.last_refreshed_at
+      : null;
 
     console.log('Status retrieved successfully - END');
     res.json({
@@ -165,8 +179,17 @@ export const getStatus = async (req, res) => {
   }
 };
 
-export const dummyController = (req, res) => {
-  res.send('Hello from the dummy controller!');
+export const dummyController = async (req, res) => {
+  try {
+    const response = await axios.get(
+      'https://restcountries.com/v2/all?fields=name,capital,region,population,flag,currencies'
+    );
+
+    return res.json(response.data.length);
+  } catch (error) {
+    console.error('Error fetching country data:', error);
+    return [];
+  }
 };
 
 export const getCountryByName = async (req, res) => {
@@ -176,21 +199,25 @@ export const getCountryByName = async (req, res) => {
     console.log('Database synced.');
 
     const { name } = req.params;
-    console.log(`Fetching country with name: ${name} from database...`);
+    console.log(
+      `Attempting to fetch country with name: ${name} from database...`
+    );
     const country = await Country.findOne({
-      where: { name: { [Op.like]: `%${name}%` } },
+      where: { name: { [Op.like]: name } }, // Exact case-insensitive match for MySQL
     });
 
     if (!country) {
-      console.log(`Country with name: ${name} not found.`);
+      console.log(`Country with name: ${name} not found in database.`);
       return res.status(404).send('Country not found');
     }
 
-    console.log(`Country ${name} fetched from database.`);
+    console.log(`Country ${country.name} fetched successfully.`);
     console.log('Country data retrieved successfully - END');
     res.json(country);
   } catch (error) {
     console.error('Error in getCountryByName:', error);
+    // Log the full error stack for better debugging
+    console.error(error.stack);
     res.status(500).send('Server error');
   }
 };

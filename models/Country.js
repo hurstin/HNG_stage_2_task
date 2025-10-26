@@ -21,21 +21,23 @@ const Country = sequelize.define(
     },
     population: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
     },
     currency_code: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     exchange_rate: {
       type: DataTypes.FLOAT,
-      allowNull: false,
+      allowNull: true,
     },
     estimated_gdp: {
       type: DataTypes.FLOAT,
+      allowNull: true,
     },
     flag_url: {
       type: DataTypes.STRING,
+      allowNull: true,
     },
     last_refreshed_at: {
       type: DataTypes.DATE,
