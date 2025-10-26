@@ -1,12 +1,17 @@
+GET http://localhost:3000/countries?region=Africa
 
-
+###
 GET http://localhost:3000/countries
 
+### Refresh country data
+POST  http://localhost:3000/countries/refresh
 
+### Get countries with filters and sorting
+GET http://localhost:3000/countries?currency=NGN
 
+### Get countries sorted by GDP descending
+GET http://localhost:3000/countries?sort=gdp_desc
 
-
-
-
-
+### Get country by name
+GET http://localhost:3000/countries/china
 
