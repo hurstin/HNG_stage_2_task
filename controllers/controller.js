@@ -2,6 +2,7 @@ import axios from 'axios';
 import Country from '../models/Country.js';
 import sequelize from '../db.js';
 import { Op } from 'sequelize';
+import { generateSummaryImage } from '../utils/imageGenerator.js';
 
 const fetchCountryData = async () => {
   try {
@@ -84,6 +85,24 @@ export const refreshCountryData = async (req, res) => {
         console.error(`Error processing country ${country.name}:`, error);
       }
     }
+
+    const totalCountries = await Country.count();
+    const topGdpCountries = await Country.findAll({
+      order: [['estimated_gdp', 'DESC']],
+      limit: 5,
+    });
+    const lastRefreshRecord = await Country.findOne({
+      order: [['last_refreshed_at', 'DESC']],
+    });
+    const lastRefreshedAt = lastRefreshRecord
+      ? lastRefreshRecord.last_refreshed_at
+      : null;
+
+    await generateSummaryImage(
+      totalCountries,
+      topGdpCountries,
+      lastRefreshedAt
+    );
 
     const countries = await Country.findAll(); // Fetch all countries after refresh
     res.json(countries);
