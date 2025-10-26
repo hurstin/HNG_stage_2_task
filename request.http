@@ -1,18 +1,7 @@
-GET http://localhost:3000/countries?sort=gdp_desc
-Content-Type: application/json
 
-GET http://localhost:3000/countries?currency=NGN
-Content-Type: application/json
-
-GET http://localhost:3000/countries?region=Africa
-Content-Type: application/json
-
-POST http://localhost:3000/countries/refresh
-Content-Type: application/json
 
 GET http://localhost:3000/countries
 
-GET http://localhost:3000/exchange-rate
 
 
 
@@ -20,5 +9,4 @@ GET http://localhost:3000/exchange-rate
 
 
 
-GET http://localhost:3000/countries?sort=gdp_desc
-Content-Type: application/json
+

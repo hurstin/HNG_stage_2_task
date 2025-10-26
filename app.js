@@ -1,5 +1,5 @@
 import express from 'express';
-import dummyRoute from './routes/dummyRoute.js';
+import dummyRoute from './routes/route.js';
 
 const app = express();
 const port = process.env.PORT || 3000;
