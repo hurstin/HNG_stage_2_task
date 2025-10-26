@@ -56,7 +56,6 @@ export const refreshCountryData = async (req, res) => {
   try {
     // Sync the database
     await sequelize.sync();
-    console.log('Database synced.');
 
     const countryDataResult = await fetchCountryData();
     if (!countryDataResult.success) {
@@ -107,13 +106,9 @@ export const refreshCountryData = async (req, res) => {
         });
 
         if (existingCountry) {
-          console.log(`Updating country: ${country.name}`);
           await existingCountry.update(countryPayload);
-          console.log(`Country ${country.name} updated successfully - END`);
         } else {
-          console.log(`Creating country: ${country.name}`);
           await Country.create(countryPayload);
-          console.log(`Country ${country.name} created successfully - END`);
         }
       } catch (error) {
         console.error(`Error processing country ${country.name}:`, error);
@@ -177,18 +172,12 @@ export const getCountryData = async (req, res) => {
 
 export const deleteCountryByName = async (req, res) => {
   try {
-    console.log('Deleting country by name - START');
-
     const { name } = req.params;
-    console.log(
-      `Attempting to delete country with name: ${name} from database...`
-    );
     const deletedRowCount = await Country.destroy({
       where: { name: { [Op.like]: name } }, // Case-insensitive match for MySQL
     });
 
     if (deletedRowCount === 0) {
-      console.log(`Country with name: ${name} not found for deletion.`);
       return res.status(404).json({ error: 'Country not found' });
     }
 
@@ -201,8 +190,6 @@ export const deleteCountryByName = async (req, res) => {
 
 export const getStatus = async (req, res) => {
   try {
-    console.log('Getting status - START');
-
     const totalCountries = await Country.count();
     const lastRefreshRecord = await Country.findOne({
       order: [['last_refreshed_at', 'DESC']],
@@ -212,7 +199,6 @@ export const getStatus = async (req, res) => {
       ? lastRefreshRecord.last_refreshed_at
       : null;
 
-    console.log('Status retrieved successfully - END');
     res.json({
       total_countries: totalCountries,
       last_refreshed_at: lastRefreshedAt,
@@ -251,23 +237,15 @@ export const dummyController = async (req, res) => {
 
 export const getCountryByName = async (req, res) => {
   try {
-    console.log('Getting country by name - START');
-
     const { name } = req.params;
-    console.log(
-      `Attempting to fetch country with name: ${name} from database...`
-    );
     const country = await Country.findOne({
       where: { name: { [Op.like]: name } }, // Exact case-insensitive match for MySQL
     });
 
     if (!country) {
-      console.log(`Country with name: ${name} not found in database.`);
       return res.status(404).json({ error: 'Country not found' });
     }
 
-    console.log(`Country ${country.name} fetched successfully.`);
-    console.log('Country data retrieved successfully - END');
     res.json(country);
   } catch (error) {
     console.error('Error in getCountryByName:', error);
