@@ -141,6 +141,30 @@ export const deleteCountryByName = async (req, res) => {
   }
 };
 
+export const getStatus = async (req, res) => {
+  try {
+    console.log('Getting status - START');
+    await sequelize.sync();
+    console.log('Database synced.');
+
+    const totalCountries = await Country.count();
+    const lastRefreshRecord = await Country.findOne({
+      order: [['last_refreshed_at', 'DESC']],
+    });
+
+    const lastRefreshedAt = lastRefreshRecord ? lastRefreshRecord.last_refreshed_at : null;
+
+    console.log('Status retrieved successfully - END');
+    res.json({
+      total_countries: totalCountries,
+      last_refreshed_at: lastRefreshedAt,
+    });
+  } catch (error) {
+    console.error('Error in getStatus:', error);
+    res.status(500).send('Server error');
+  }
+};
+
 export const dummyController = (req, res) => {
   res.send('Hello from the dummy controller!');
 };

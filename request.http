@@ -17,3 +17,7 @@ GET http://localhost:3000/countries/Nigeria
 
 ### Delete country by name
 DELETE http://localhost:3000/countries/Nigeria
+
+
+### Get API status
+GET http://localhost:3000/status
