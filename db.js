@@ -16,29 +16,31 @@ const sequelize = new Sequelize(
   {
     host: process.env.DB_HOST,
     dialect: process.env.DB_DIALECT,
+    port: process.env.DB_PORT,
 
-  // Connection pool settings
-  pool: {
-    max: 10,
-    min: 0,
-    acquire: 30000,
-    idle: 10000,
-    evict: 60000,
-  },
+    // Connection pool settings
+    pool: {
+      max: 10,
+      min: 0,
+      acquire: 30000,
+      idle: 10000,
+      evict: 60000,
+    },
 
-  // Retry configuration
-  retry: {
-    max: 3,
-  },
+    // Retry configuration
+    retry: {
+      max: 3,
+    },
 
-  // Connection timeout
-  dialectOptions: {
-    connectTimeout: 60000,
-  },
+    // Connection timeout
+    dialectOptions: {
+      connectTimeout: 60000,
+    },
 
-  // Logging (set to false in production)
-  logging: process.env.NODE_ENV === 'development' ? console.log : false,
-});
+    // Logging (set to false in production)
+    logging: process.env.NODE_ENV === 'development' ? console.log : false,
+  }
+);
 
 // Test connection and add event handlers
 async function initializeDatabase() {
